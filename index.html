@@ -93,6 +93,7 @@
         .container.fullscreen-mode {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: var(--bg); padding: 0; z-index: 50;
+            justify-content: center; /* Garante que fique centrado verticalmente */
         }
         .container.fullscreen-mode .card { box-shadow: none; background: transparent; max-width: 100%; }
         .container.fullscreen-mode .hide-on-fullscreen { display: none !important; }
@@ -224,7 +225,7 @@
             <div id="app-view">
                 <button class="edit-btn hide-on-fullscreen" onclick="toggleView()" title="Editar">⚙️</button>
                 
-                <h1 id="display-title" class="dynamic-title hide-on-fullscreen">Cronómetro</h1>
+                <h1 id="display-title" class="dynamic-title">Cronómetro</h1>
                 
                 <div class="tabs hide-on-fullscreen">
                     <button class="tab-btn active" onclick="setMode('stopwatch')" id="tab-stopwatch">Cronómetro</button>
@@ -242,7 +243,7 @@
                     <button class="btn-reset" onclick="reset()">Reset</button>
                 </div>
 
-                <footer id="display-footer" class="dynamic-footer hide-on-fullscreen"></footer>
+                <footer id="display-footer" class="dynamic-footer"></footer>
             </div>
 
             <div id="settings-view">
