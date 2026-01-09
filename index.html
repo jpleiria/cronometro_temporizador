@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cronómetro / Temporizador</title>
+    <title>Cronómetro Master v13 (Alinhamento Dinâmico)</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@600&family=Orbitron:wght@500&family=Press+Start+2P&family=Roboto+Mono:wght@500&family=Share+Tech+Mono&family=Inter:wght@600&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --primary: #3498db;
+            /* Cores */
+            --primary: #3498db; 
             --secondary: #2c3e50;
             --accent: #e74c3c;
+            --warning: #f39c12;
+            --success: #2ecc71;
             --bg: #f4f7f6;
             --card-bg: #ffffff;
             --text-main: #2c3e50;
@@ -22,9 +25,7 @@
         }
 
         [data-theme="dark"] {
-            --primary: #5dade2;
             --secondary: #ecf0f1;
-            --accent: #ff6b6b;
             --bg: #1a1a1a;
             --card-bg: #2d2d2d;
             --text-main: #ecf0f1;
@@ -62,17 +63,15 @@
         .logo-small { height: 50px; width: auto; }
         .logo-medium { height: 100px; width: auto; }
         .logo-large { height: 180px; width: auto; }
-        
         .rt-small { font-size: 1rem; }
-        .rt-medium { font-size: 1.5rem; font-weight: bold; }
-        .rt-large { font-size: 3rem; font-weight: bold; }
+        .rt-medium { font-size: 2rem; font-weight: bold; }
+        .rt-large { font-size: 4rem; font-weight: bold; }
 
         /* --- Toolbar --- */
         .top-bar {
             position: absolute; top: 20px; left: 20px;
-            display: flex; gap: 15px; z-index: 100;
-            background: rgba(0,0,0,0.05);
-            padding: 8px 15px; border-radius: 50px;
+            display: flex; gap: 10px; z-index: 100;
+            background: rgba(0,0,0,0.05); padding: 8px 15px; border-radius: 50px;
             backdrop-filter: blur(5px);
         }
         .icon-btn {
@@ -89,11 +88,11 @@
             flex: 1; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             padding: 20px; transition: all 0.3s ease;
+            width: 100%;
         }
         .container.fullscreen-mode {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: var(--bg); padding: 0; z-index: 50;
-            justify-content: center; /* Garante que fique centrado verticalmente */
+            background: var(--bg); padding: 0; z-index: 50; justify-content: center;
         }
         .container.fullscreen-mode .card { box-shadow: none; background: transparent; max-width: 100%; }
         .container.fullscreen-mode .hide-on-fullscreen { display: none !important; }
@@ -105,24 +104,75 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             text-align: center; width: 100%; max-width: 900px;
             position: relative;
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        h1.dynamic-title { margin-top: 0; font-size: 2rem; color: var(--primary); min-height: 0; }
+        h1.dynamic-title { margin-top: 0; font-size: 2rem; color: var(--primary); min-height: 0; text-align: center; width: 100%;}
         h1.dynamic-title[style*="display: none"] { margin: 0; }
-        
-        footer.dynamic-footer { margin-top: 20px; font-size: 0.9rem; color: var(--text-sub); }
+        footer.dynamic-footer { margin-top: 20px; font-size: 0.9rem; color: var(--text-sub); text-align: center; width: 100%;}
         footer.dynamic-footer[style*="display: none"] { margin: 0; }
 
-        /* --- Relógio --- */
+        /* --- Barra de Progresso --- */
+        .progress-bar-container {
+            width: 80%; height: 10px; 
+            background: rgba(0,0,0,0.05);
+            border-radius: 20px; overflow: hidden; 
+            margin: 10px auto 20px auto; 
+            display: none; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .progress-bar-fill { 
+            height: 100%; width: 100%; 
+            background: linear-gradient(90deg, var(--success), var(--primary)); 
+            border-radius: 20px;
+            transition: width 1s linear; 
+        }
+
+        /* --- RELÓGIO (Alinhamento Dinâmico) --- */
         .clock-wrapper {
-            display: flex; justify-content: center; align-items: baseline;
-            font-size: var(--timer-size); font-weight: bold; color: var(--text-main);
-            margin: 20px 0; line-height: 1; user-select: none;
+            display: flex; 
+            justify-content: center; /* Alinha o bloco inteiro ao centro */
+            align-items: baseline;
+            font-size: var(--timer-size); 
+            font-weight: bold; 
+            color: var(--text-main);
+            margin: 20px 0; 
+            line-height: 1; 
+            user-select: none;
+            width: 100%;
+            
+            /* Evita que números tremam individualmente */
             font-variant-numeric: tabular-nums lining-nums;
             font-feature-settings: "tnum", "lnum";
         }
-        .time-part-main { text-align: right; min-width: 3.5ch; }
-        .time-part-millis { font-size: 0.5em; opacity: 0.7; text-align: left; width: 3ch; margin-left: 5px; }
+        
+        /* Remover larguras fixas para alinhamento dinâmico */
+        .time-part-main { 
+            text-align: center; /* Garante que o texto em si não tenha bias */
+            white-space: nowrap;
+        }
+        .time-part-millis { 
+            font-size: 0.5em; opacity: 0.7; 
+            margin-left: 0.1em;
+            white-space: nowrap;
+        }
+
+        .clock-wrapper.urgent { color: var(--accent); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+
+        /* --- Laps --- */
+        #laps-container {
+            max-height: 150px; overflow-y: auto; width: 100%;
+            margin-top: 20px; text-align: left;
+            border-top: 1px solid var(--input-border);
+            padding-top: 10px; display: none;
+        }
+        .lap-item {
+            display: flex; justify-content: space-between;
+            padding: 5px 10px; border-bottom: 1px solid rgba(0,0,0,0.05);
+            font-family: 'Roboto Mono', monospace; font-size: 0.9rem;
+            color: var(--text-sub);
+        }
+        .lap-item:nth-child(even) { background: rgba(0,0,0,0.02); }
 
         /* Fontes */
         .font-modern { font-family: 'Inter', sans-serif; }
@@ -134,16 +184,18 @@
         .font-soft { font-family: 'Fredoka', sans-serif; }
 
         /* --- Controls --- */
-        .controls { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 20px; }
+        .controls { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 20px; width: 100%; }
         .controls button {
-            padding: 12px 30px; font-size: 1.1rem; border: none;
+            padding: 12px 25px; font-size: 1.1rem; border: none;
             border-radius: 12px; cursor: pointer; color: white;
             font-weight: 600; transition: transform 0.1s;
+            display: flex; align-items: center; gap: 8px;
         }
         .controls button:active { transform: scale(0.95); }
         .btn-start { background-color: var(--primary); }
         .btn-stop { background-color: var(--accent); }
         .btn-reset { background-color: #95a5a6; }
+        .btn-lap { background-color: var(--secondary); }
 
         .tabs {
             display: flex; justify-content: center; margin-bottom: 20px;
@@ -164,7 +216,7 @@
             font-size: 1.5rem; color: var(--text-sub);
         }
         #settings-view { 
-            display: none; text-align: left;
+            display: none; text-align: left; width: 100%;
             max-height: 60vh; overflow-y: auto; padding-right: 5px;
         }
         #settings-view::-webkit-scrollbar { width: 8px; }
@@ -176,16 +228,17 @@
         .form-group { margin-bottom: 10px; }
         .form-row { display: flex; gap: 10px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
-        .form-group input, .form-group select {
+        .form-group input[type="text"], .form-group input[type="number"], .form-group select {
             width: 100%; padding: 10px; border: 1px solid var(--input-border);
             background: var(--input-bg); color: var(--text-main); border-radius: 6px; box-sizing: border-box;
         }
         
-        /* Botões Especiais (Upload) */
-        .btn-upload { background: var(--secondary); color: white; margin-top: 5px; cursor: pointer; }
         .btn-remove { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-top: 5px; }
-        
         .btn-save { width: 100%; padding: 12px; background-color: #27ae60; color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+        
+        .preset-container { display: flex; gap: 5px; margin-top: 5px; }
+        .btn-preset { padding: 5px 10px; font-size: 0.8rem; background: var(--input-bg); border: 1px solid var(--input-border); cursor: pointer; border-radius: 4px; color: var(--text-main); }
+        .btn-preset:hover { background: var(--primary); color: white; border-color: var(--primary); }
 
         /* --- Modal --- */
         #message-modal {
@@ -212,8 +265,8 @@
     <img id="app-logo" src="" alt="Logo" class="logo-medium">
 
     <div class="top-bar">
-        <button class="icon-btn" onclick="toggleTheme()" title="Modo Escuro/Claro">🌓</button>
-        <button class="icon-btn" onclick="toggleFullscreen()" title="Ecrã Inteiro">⛶</button>
+        <button class="icon-btn" onclick="toggleTheme()" title="Tema Escuro/Claro">🌓</button>
+        <button class="icon-btn" onclick="toggleFullscreen()" title="Ecrã Inteiro (F)">⛶</button>
         <div class="divider"></div>
         <button class="icon-btn" onclick="adjustSize(-0.5)" title="Diminuir Texto">A-</button>
         <button class="icon-btn" onclick="adjustSize(0.5)" title="Aumentar Texto">A+</button>
@@ -232,16 +285,23 @@
                     <button class="tab-btn" onclick="setMode('timer')" id="tab-timer">Temporizador</button>
                 </div>
 
+                <div class="progress-bar-container" id="progress-bar-container">
+                    <div class="progress-bar-fill" id="progress-bar-fill"></div>
+                </div>
+
                 <div class="clock-wrapper font-modern" id="clock-wrapper">
                     <span class="time-part-main" id="display-main">00:00</span>
                     <span class="time-part-millis" id="display-millis">.00</span>
                 </div>
 
                 <div class="controls">
-                    <button class="btn-start" onclick="start()">Play</button>
-                    <button class="btn-stop" onclick="stop()">Stop</button>
-                    <button class="btn-reset" onclick="reset()">Reset</button>
+                    <button class="btn-start" onclick="start()" title="Espaço">Play</button>
+                    <button class="btn-stop" onclick="stop()" title="Espaço">Stop</button>
+                    <button class="btn-lap" onclick="recordLap()" id="btn-lap" title="Tecla L">🏁 Volta</button>
+                    <button class="btn-reset" onclick="reset()" title="Esc">Reset</button>
                 </div>
+                
+                <div id="laps-container"></div>
 
                 <footer id="display-footer" class="dynamic-footer"></footer>
             </div>
@@ -250,31 +310,37 @@
                 <h2 style="margin-top:0;">Definições</h2>
                 
                 <div class="settings-section">
-                    <div class="settings-title">Visual</div>
-                    <div class="form-group">
-                        <label>Estilo do Relógio:</label>
-                        <select id="input-font" onchange="previewFont(this.value)">
-                            <option value="font-modern">Moderno</option>
-                            <option value="font-digital">Digital</option>
-                            <option value="font-mono">Código</option>
-                            <option value="font-tech">Matrix</option>
-                            <option value="font-retro">Retro 8-Bit</option>
-                            <option value="font-comic">Comic</option>
-                            <option value="font-soft">Soft</option>
-                        </select>
+                    <div class="settings-title">Geral & Temas</div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1">
+                            <label>Cor Principal:</label>
+                            <input type="color" id="input-color-primary" value="#3498db" onchange="updatePrimaryColor(this.value)">
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label>Estilo do Relógio:</label>
+                            <select id="input-font" onchange="previewFont(this.value)">
+                                <option value="font-modern">Moderno</option>
+                                <option value="font-digital">Digital</option>
+                                <option value="font-mono">Código</option>
+                                <option value="font-tech">Matrix</option>
+                                <option value="font-retro">Retro 8-Bit</option>
+                                <option value="font-comic">Comic</option>
+                                <option value="font-soft">Soft</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Título (deixe vazio para remover):</label>
+                        <label>Título:</label>
                         <input type="text" id="input-title">
                     </div>
                 </div>
 
                 <div class="settings-section">
-                    <div class="settings-title">Logotipo Personalizado</div>
+                    <div class="settings-title">Logotipo</div>
                     <div class="form-group">
                         <label>Carregar Imagem:</label>
                         <input type="file" id="input-logo-file" accept="image/*" onchange="handleLogoUpload(this)">
-                        <button class="btn-remove" onclick="resetLogo()">Remover / Resetar Logo</button>
+                        <button class="btn-remove" onclick="resetLogo()">Resetar p/ "logo.png"</button>
                     </div>
                     <div class="form-row">
                         <div class="form-group" style="flex:1">
@@ -317,20 +383,50 @@
                             </select>
                         </div>
                         <div class="form-group" style="flex:1">
-                            <label>Posição:</label>
-                            <select id="input-rt-pos">
-                                <option value="zone-top-right">Canto Sup. Direito</option>
-                                <option value="zone-top-center">Topo Centro</option>
-                                <option value="zone-top-left">Canto Sup. Esquerdo</option>
-                                <option value="zone-bottom-center">Fundo Centro</option>
-                                <option value="zone-bottom-right">Canto Inf. Direito</option>
+                            <label>Tamanho:</label>
+                            <select id="input-rt-size">
+                                <option value="rt-small">Pequeno</option>
+                                <option value="rt-medium">Médio</option>
+                                <option value="rt-large">Grande</option>
                             </select>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label>Posição:</label>
+                        <select id="input-rt-pos">
+                            <option value="zone-top-right">Canto Sup. Direito</option>
+                            <option value="zone-top-center">Topo Centro</option>
+                            <option value="zone-top-left">Canto Sup. Esquerdo</option>
+                            <option value="zone-bottom-center">Fundo Centro</option>
+                            <option value="zone-bottom-right">Canto Inf. Direito</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <div class="settings-title">Som (Timer)</div>
+                    <div class="form-group">
+                        <label>Escolher Som:</label>
+                        <select id="input-sound-type">
+                            <option value="beep">Clássico (Beep)</option>
+                            <option value="digital">Digital (8-Bit)</option>
+                            <option value="alarm">Alarme (Sirene)</option>
+                            <option value="soft">Suave</option>
+                            <option value="none">Sem Som</option>
+                        </select>
+                    </div>
+                    <button class="btn-preset" onclick="testSound()">🔊 Testar Som</button>
                 </div>
 
                 <div class="settings-section">
-                    <div class="settings-title">Temporizador</div>
+                    <div class="settings-title">Temporizador (Presets)</div>
+                    <div class="preset-container">
+                        <button class="btn-preset" onclick="setPreset(0,5,0)">5 min</button>
+                        <button class="btn-preset" onclick="setPreset(0,10,0)">10 min</button>
+                        <button class="btn-preset" onclick="setPreset(0,25,0)">25 min</button>
+                        <button class="btn-preset" onclick="setPreset(1,0,0)">1 Hora</button>
+                    </div>
+                    <br>
                     <div class="form-row">
                         <div class="form-group" style="flex:1"><label>H:</label><input type="number" id="input-timer-hr" value="0" min="0"></div>
                         <div class="form-group" style="flex:1"><label>M:</label><input type="number" id="input-timer-min" value="5" min="0"></div>
@@ -343,11 +439,11 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Rodapé (deixe vazio para remover):</label>
+                    <label>Rodapé:</label>
                     <input type="text" id="input-footer">
                 </div>
 
-                <button class="btn-save" onclick="saveSettings()">Voltar</button>
+                <button class="btn-save" onclick="saveSettings()">Guardar e Voltar</button>
             </div>
 
         </div>
@@ -367,11 +463,14 @@
         let isRunning = false;
         let mode = 'stopwatch';
         let timerDurationCS = 30000;
+        let initialTimerCS = 30000;
         let customMessage = "O tempo acabou!";
         let sizeNormal = 6; let sizeFull = 15;
-        
-        // Estado da Imagem
-        const defaultLogo = "logo.png"; // Fallback se não houver custom
+        let wakeLock = null;
+        let lapCount = 0;
+
+        // Persistência - LOGO DEFAULT
+        const defaultLogo = "logo.png"; 
         let currentLogoData = defaultLogo;
 
         // --- DOM ---
@@ -386,6 +485,9 @@
             container: document.getElementById('main-container'),
             rtClock: document.getElementById('real-time-clock'),
             logo: document.getElementById('app-logo'),
+            laps: document.getElementById('laps-container'),
+            progressBar: document.getElementById('progress-bar-container'),
+            progressFill: document.getElementById('progress-bar-fill'),
             inputs: {
                 title: document.getElementById('input-title'),
                 footer: document.getElementById('input-footer'),
@@ -394,64 +496,142 @@
                 sec: document.getElementById('input-timer-sec'),
                 msg: document.getElementById('input-message'),
                 font: document.getElementById('input-font'),
+                color: document.getElementById('input-color-primary'),
                 rtShow: document.getElementById('input-rt-show'),
                 rtPos: document.getElementById('input-rt-pos'),
+                rtSize: document.getElementById('input-rt-size'),
                 logoShow: document.getElementById('input-logo-show'),
                 logoSize: document.getElementById('input-logo-size'),
                 logoPos: document.getElementById('input-logo-pos'),
+                soundType: document.getElementById('input-sound-type')
             }
         };
 
         function init() {
-            els.inputs.title.value = els.title.innerText;
-            els.inputs.footer.value = els.footer.innerText;
-            
-            // Carregar Logotipo da Memória (LocalStorage)
-            const savedLogo = localStorage.getItem('customLogo');
-            if (savedLogo) {
-                currentLogoData = savedLogo;
-            }
-            els.logo.src = currentLogoData;
-
+            loadConfig();
             setInterval(updateRealClock, 1000);
             updateRealClock();
+            document.addEventListener('keydown', handleKeydown);
             document.documentElement.style.setProperty('--timer-size', sizeNormal + 'rem');
-            
-            saveSettings(); 
+            saveSettings(true); 
         }
 
-        // --- LOGICA DE UPLOAD DE IMAGEM ---
+        function loadConfig() {
+            // Logo Logic
+            const savedLogo = localStorage.getItem('customLogo');
+            if (savedLogo) { currentLogoData = savedLogo; }
+            else { currentLogoData = defaultLogo; }
+            els.logo.src = currentLogoData;
+
+            const config = JSON.parse(localStorage.getItem('appConfig'));
+            if(config) {
+                els.inputs.title.value = config.title || "Cronómetro";
+                els.inputs.footer.value = config.footer || "";
+                els.inputs.msg.value = config.msg || "Acabou!";
+                els.inputs.color.value = config.color || "#3498db";
+                els.inputs.font.value = config.font || "font-modern";
+                
+                els.inputs.logoShow.value = config.logoShow || "none";
+                els.inputs.logoSize.value = config.logoSize || "logo-medium";
+                els.inputs.logoPos.value = config.logoPos || "zone-top-left";
+                
+                els.inputs.rtShow.value = config.rtShow || "none";
+                els.inputs.rtPos.value = config.rtPos || "zone-top-right";
+                els.inputs.rtSize.value = config.rtSize || "rt-small"; 
+
+                els.inputs.soundType.value = config.soundType || "beep";
+                
+                updatePrimaryColor(config.color || "#3498db");
+            } else {
+                els.inputs.title.value = "Cronómetro";
+            }
+        }
+
+        // --- UPLOAD LOGIC ---
         function handleLogoUpload(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                
                 reader.onload = function(e) {
-                    const base64Image = e.target.result;
-                    currentLogoData = base64Image;
-                    
-                    // Atualizar a imagem imediatamente
+                    currentLogoData = e.target.result;
                     els.logo.src = currentLogoData;
-                    
-                    // Guardar na memória do navegador (Persistência)
-                    try {
-                        localStorage.setItem('customLogo', currentLogoData);
-                    } catch (error) {
-                        alert("A imagem é demasiado grande para guardar na memória. Tente uma menor.");
-                    }
+                    try { localStorage.setItem('customLogo', currentLogoData); } catch (e) { alert("Imagem muito grande!"); }
                 }
-                
                 reader.readAsDataURL(input.files[0]);
             }
         }
-
         function resetLogo() {
-            currentLogoData = defaultLogo;
+            currentLogoData = defaultLogo; 
             els.logo.src = currentLogoData;
             localStorage.removeItem('customLogo');
-            document.getElementById('input-logo-file').value = ""; // Limpar input
+            document.getElementById('input-logo-file').value = "";
         }
 
-        // --- ZOOM & UI ---
+        // --- SINTETIZADOR DE SOM (Web Audio API) ---
+        function playTone(type) {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+
+            if (type === 'beep') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.exponentialRampToValueAtTime(440, now + 0.5);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            }
+            else if (type === 'digital') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.setValueAtTime(800, now + 0.1);
+                osc.frequency.setValueAtTime(600, now + 0.2);
+                gain.gain.value = 0.1;
+                osc.start(now); osc.stop(now + 0.3);
+            }
+            else if (type === 'alarm') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(800, now + 0.5);
+                gain.gain.value = 0.2;
+                osc.start(now); osc.stop(now + 0.5);
+                // Segundo pulso
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sawtooth';
+                osc2.connect(gain2); gain2.connect(ctx.destination);
+                osc2.frequency.setValueAtTime(400, now + 0.5);
+                osc2.frequency.linearRampToValueAtTime(800, now + 1.0);
+                gain2.gain.value = 0.2;
+                osc2.start(now + 0.5); osc2.stop(now + 1.0);
+            }
+            else if (type === 'soft') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.5, now + 0.5);
+                gain.gain.linearRampToValueAtTime(0, now + 1.5);
+                osc.start(now); osc.stop(now + 1.5);
+            }
+        }
+        
+        function playSound() {
+            const type = els.inputs.soundType.value;
+            if (type !== 'none') playTone(type);
+        }
+        function testSound() { playSound(); }
+
+        // --- WAKE LOCK ---
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
+        }
+        function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
+
+        // --- UI ---
+        function updatePrimaryColor(color) { document.documentElement.style.setProperty('--primary', color); }
+        function setPreset(h, m, s) { els.inputs.hr.value = h; els.inputs.min.value = m; els.inputs.sec.value = s; }
+        
         function adjustSize(step) {
             const isFull = els.container.classList.contains('fullscreen-mode');
             if (isFull) {
@@ -475,72 +655,72 @@
             els.appView.style.display = isHidden ? 'block' : 'none';
             els.settingsView.style.display = isHidden ? 'none' : 'block';
         }
-
         function toggleTheme() {
             const body = document.body;
             body.setAttribute('data-theme', body.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
         }
-        
-        function previewFont(fontClass) {
-             els.clockWrapper.className = `clock-wrapper ${fontClass}`;
-        }
+        function previewFont(v) { els.clockWrapper.className = `clock-wrapper ${v}`; }
 
-        function saveSettings() {
-            // Textos
+        function saveSettings(isInit = false) {
             const tVal = els.inputs.title.value.trim();
-            els.title.innerText = tVal;
-            els.title.style.display = tVal === "" ? "none" : "block";
-
+            els.title.innerText = tVal; els.title.style.display = tVal === "" ? "none" : "block";
             const fVal = els.inputs.footer.value.trim();
-            els.footer.innerText = fVal;
-            els.footer.style.display = fVal === "" ? "none" : "block";
-
+            els.footer.innerText = fVal; els.footer.style.display = fVal === "" ? "none" : "block";
             customMessage = els.inputs.msg.value;
 
-            // Timer calc
             const h = parseInt(els.inputs.hr.value) || 0;
             const m = parseInt(els.inputs.min.value) || 0;
             const s = parseInt(els.inputs.sec.value) || 0;
             timerDurationCS = ((h * 3600) + (m * 60) + s) * 100;
+            initialTimerCS = timerDurationCS;
 
             els.clockWrapper.className = `clock-wrapper ${els.inputs.font.value}`;
 
-            // ZONAS
+            // Real Time Clock
             els.rtClock.style.display = els.inputs.rtShow.value;
-            els.rtClock.className = `rt-medium`; 
+            els.rtClock.className = els.inputs.rtSize.value;
             const rtZone = document.getElementById(els.inputs.rtPos.value);
             if(rtZone) rtZone.appendChild(els.rtClock);
 
+            // Logo
             els.logo.style.display = els.inputs.logoShow.value;
             els.logo.className = els.inputs.logoSize.value;
             const logoZone = document.getElementById(els.inputs.logoPos.value);
             if(logoZone) logoZone.appendChild(els.logo);
+            
+            const config = {
+                title: tVal, footer: fVal, msg: customMessage,
+                color: els.inputs.color.value, font: els.inputs.font.value,
+                logoShow: els.inputs.logoShow.value, logoSize: els.inputs.logoSize.value, logoPos: els.inputs.logoPos.value,
+                rtShow: els.inputs.rtShow.value, rtPos: els.inputs.rtPos.value, rtSize: els.inputs.rtSize.value,
+                soundType: els.inputs.soundType.value
+            };
+            localStorage.setItem('appConfig', JSON.stringify(config));
 
-            if (mode === 'timer') reset();
-            if(els.settingsView.style.display === 'block') toggleView();
+            if (mode === 'timer' && !isInit) reset();
+            if(!isInit && els.settingsView.style.display === 'block') toggleView();
         }
 
-        function updateRealClock() {
-            const now = new Date();
-            els.rtClock.innerText = now.toLocaleTimeString('pt-PT', { hour12: false });
+        function updateRealClock() { els.rtClock.innerText = new Date().toLocaleTimeString('pt-PT', { hour12: false }); }
+
+        function handleKeydown(e) {
+            if (e.target.tagName === 'INPUT') return;
+            if (e.code === 'Space') { e.preventDefault(); isRunning ? stop() : start(); }
+            if (e.code === 'Escape') { reset(); }
+            if (e.code === 'KeyF') { toggleFullscreen(); }
+            if (e.code === 'KeyL') { recordLap(); }
         }
 
-        // --- TIMER CORE ---
         function formatTimeParts(cs) {
             const totalSeconds = Math.floor(cs / 100);
             const hours = Math.floor(totalSeconds / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
             const centis = cs % 100;
-
             const mStr = minutes.toString().padStart(2, '0');
             const sStr = seconds.toString().padStart(2, '0');
             const csStr = centis.toString().padStart(2, '0');
-
-            let mainPart = (hours > 0) 
-                ? `${hours.toString().padStart(2, '0')}:${mStr}:${sStr}`
-                : `${mStr}:${sStr}`;
-
+            let mainPart = (hours > 0) ? `${hours.toString().padStart(2, '0')}:${mStr}:${sStr}` : `${mStr}:${sStr}`;
             return { main: mainPart, millis: `.${csStr}` };
         }
 
@@ -548,6 +728,31 @@
             const parts = formatTimeParts(timeInCentiseconds);
             els.displayMain.innerText = parts.main;
             els.displayMillis.innerText = parts.millis;
+            document.title = isRunning ? `${parts.main} - Timer` : "Cronómetro Master";
+
+            if (mode === 'timer' && initialTimerCS > 0) {
+                const pct = (timeInCentiseconds / initialTimerCS) * 100;
+                els.progressFill.style.width = pct + "%";
+                
+                // Cores da Barra de Progresso e Gradiente
+                if (pct > 50) { 
+                    els.progressFill.style.background = 'linear-gradient(90deg, var(--success), var(--primary))'; 
+                } 
+                else if (pct > 20) { 
+                    els.progressFill.style.background = 'linear-gradient(90deg, var(--warning), var(--accent))'; 
+                } 
+                else { 
+                    els.progressFill.style.background = 'var(--accent)'; 
+                }
+
+                if (timeInCentiseconds <= 1000 && timeInCentiseconds > 0) {
+                    els.clockWrapper.classList.add('urgent');
+                } else {
+                    els.clockWrapper.classList.remove('urgent');
+                }
+            } else {
+                 els.clockWrapper.classList.remove('urgent');
+            }
         }
 
         function setMode(selectedMode) {
@@ -555,44 +760,53 @@
             mode = selectedMode;
             document.getElementById('tab-stopwatch').className = mode === 'stopwatch' ? 'tab-btn active' : 'tab-btn';
             document.getElementById('tab-timer').className = mode === 'timer' ? 'tab-btn active' : 'tab-btn';
+            els.progressBar.style.display = mode === 'timer' ? 'block' : 'none';
+            els.laps.style.display = mode === 'stopwatch' ? 'block' : 'none';
+            document.getElementById('btn-lap').style.display = mode === 'stopwatch' ? 'flex' : 'none';
             reset();
         }
 
         function start() {
             if (isRunning) return;
             isRunning = true;
+            requestWakeLock();
             interval = setInterval(() => {
-                if (mode === 'stopwatch') {
-                    timeInCentiseconds++;
-                } else {
-                    if (timeInCentiseconds > 0) {
-                        timeInCentiseconds--;
-                    } else {
-                        stop();
-                        showModal();
-                        return;
-                    }
+                if (mode === 'stopwatch') { timeInCentiseconds++; } 
+                else {
+                    if (timeInCentiseconds > 0) { timeInCentiseconds--; } 
+                    else { stop(); playSound(); showModal(); return; }
                 }
                 updateDisplay();
             }, 10);
         }
 
-        function stop() {
-            isRunning = false;
-            clearInterval(interval);
-        }
-
+        function stop() { isRunning = false; clearInterval(interval); releaseWakeLock(); document.title = "Pausa - " + els.displayMain.innerText; }
+        
         function reset() {
             stop();
             timeInCentiseconds = (mode === 'stopwatch') ? 0 : timerDurationCS;
             updateDisplay();
+            els.progressFill.style.width = '100%';
+            els.progressFill.style.background = 'linear-gradient(90deg, var(--success), var(--primary))';
+            els.clockWrapper.classList.remove('urgent');
+            document.title = "Cronómetro Master";
+            lapCount = 0; els.laps.innerHTML = "";
+        }
+
+        function recordLap() {
+            if(mode !== 'stopwatch') return;
+            lapCount++;
+            const parts = formatTimeParts(timeInCentiseconds);
+            const div = document.createElement('div');
+            div.className = 'lap-item';
+            div.innerHTML = `<span>Volta ${lapCount}</span><span>${parts.main}${parts.millis}</span>`;
+            els.laps.prepend(div);
         }
 
         function showModal() {
             document.getElementById('modal-text').innerText = customMessage;
             document.getElementById('message-modal').style.display = 'flex';
         }
-
         function closeModal() {
             document.getElementById('message-modal').style.display = 'none';
             if(mode === 'timer') reset();
