@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronómetro & Temporizador</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2c3e50;
+            --accent: #e74c3c;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            color: var(--secondary);
+        }
+
+        /* Container Principal */
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        /* Header e Footer dinâmicos */
+        h1.dynamic-title {
+            margin-top: 0;
+            font-size: 2rem;
+            color: var(--primary);
+        }
+
+        footer.dynamic-footer {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        /* Display do Tempo */
+        .time-display {
+            font-size: 5rem;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+            margin: 20px 0;
+            color: var(--secondary);
+        }
+
+        /* Botões de Controlo */
+        .controls button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 5px;
+            transition: transform 0.1s, opacity 0.2s;
+            font-weight: 600;
+        }
+
+        .controls button:active { transform: scale(0.95); }
+
+        .btn-start { background-color: var(--primary); color: white; }
+        .btn-stop { background-color: var(--accent); color: white; }
+        .btn-reset { background-color: #95a5a6; color: white; }
+
+        /* Abas de Seleção (Cronometro vs Temporizador) */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            background: #ecf0f1;
+            border-radius: 20px;
+            padding: 5px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 15px;
+            font-weight: bold;
+            color: #7f8c8d;
+        }
+
+        .tab-btn.active {
+            background-color: white;
+            color: var(--primary);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* Botão de Editar */
+        .edit-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #bdc3c7;
+        }
+        .edit-btn:hover { color: var(--primary); }
+
+        /* PÁGINA DE EDIÇÃO */
+        #settings-view {
+            display: none; /* Escondido por defeito */
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box; /* Garante que o padding não aumente a largura */
+        }
+
+        .btn-save {
+            width: 100%;
+            padding: 12px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* Modal de Mensagem Final */
+        #message-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 80%;
+        }
+        .modal-content h2 { color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card">
+            
+            <div id="app-view">
+                <button class="edit-btn" onclick="toggleView()" title="Editar Configurações">⚙️ Editar</button>
+                
+                <h1 id="display-title" class="dynamic-title">Meu Cronómetro</h1>
+                
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="setMode('stopwatch')" id="tab-stopwatch">Cronómetro</button>
+                    <button class="tab-btn" onclick="setMode('timer')" id="tab-timer">Temporizador</button>
+                </div>
+
+                <div class="time-display" id="time-display">00:00</div>
+
+                <div class="controls">
+                    <button class="btn-start" onclick="start()" id="btn-play">Play</button>
+                    <button class="btn-stop" onclick="stop()">Stop</button>
+                    <button class="btn-reset" onclick="reset()">Reset</button>
+                </div>
+
+                <footer id="display-footer" class="dynamic-footer">Rodapé da Página</footer>
+            </div>
+
+            <div id="settings-view">
+                <h2 style="margin-top:0;">Configurações</h2>
+                
+                <div class="form-group">
+                    <label>Título da Página:</label>
+                    <input type="text" id="input-title" placeholder="Ex: Treino Tabata">
+                </div>
+
+                <div class="form-group">
+                    <label>Texto do Rodapé:</label>
+                    <input type="text" id="input-footer" placeholder="Ex: Feito por João">
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                
+                <div class="form-group">
+                    <label>Configuração do Temporizador (minutos):</label>
+                    <input type="number" id="input-timer-min" value="5" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label>Mensagem final do Temporizador:</label>
+                    <input type="text" id="input-message" value="O tempo acabou!">
+                </div>
+
+                <button class="btn-save" onclick="saveSettings()">Guardar e Voltar</button>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="message-modal">
+        <div class="modal-content">
+            <h2 id="modal-text">Mensagem</h2>
+            <button class="btn-start" onclick="closeModal()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis de Estado
+        let interval = null;
+        let seconds = 0;
+        let isRunning = false;
+        let mode = 'stopwatch'; // 'stopwatch' ou 'timer'
+        
+        // Configurações Padrão
+        let timerDuration = 5 * 60; // 5 minutos em segundos
+        let customMessage = "O tempo acabou!";
+
+        // Elementos do DOM
+        const displayTitle = document.getElementById('display-title');
+        const displayFooter = document.getElementById('display-footer');
+        const timeDisplay = document.getElementById('time-display');
+        const appView = document.getElementById('app-view');
+        const settingsView = document.getElementById('settings-view');
+        
+        // Inputs de Edição
+        const inputTitle = document.getElementById('input-title');
+        const inputFooter = document.getElementById('input-footer');
+        const inputTimerMin = document.getElementById('input-timer-min');
+        const inputMessage = document.getElementById('input-message');
+
+        // Inicialização
+        function init() {
+            // Carregar valores iniciais nos inputs
+            inputTitle.value = displayTitle.innerText;
+            inputFooter.value = displayFooter.innerText;
+        }
+
+        // Função de Alternar Visualização (App <-> Edição)
+        function toggleView() {
+            stop(); // Pausa se estiver a correr ao editar
+            if (appView.style.display === 'none') {
+                appView.style.display = 'block';
+                settingsView.style.display = 'none';
+            } else {
+                appView.style.display = 'none';
+                settingsView.style.display = 'block';
+            }
+        }
+
+        // Guardar Configurações
+        function saveSettings() {
+            displayTitle.innerText = inputTitle.value || "Sem Título";
+            displayFooter.innerText = inputFooter.value || " ";
+            
+            // Converter minutos para segundos
+            const mins = parseInt(inputTimerMin.value) || 0;
+            timerDuration = mins * 60;
+            
+            customMessage = inputMessage.value;
+
+            // Se estivermos em modo temporizador, reseta para assumir o novo tempo
+            if (mode === 'timer') {
+                reset();
+            }
+
+            toggleView();
+        }
+
+        // Formatar Tempo (MM:SS)
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateDisplay() {
+            timeDisplay.innerText = formatTime(seconds);
+        }
+
+        // Alternar Modos (Cronómetro / Temporizador)
+        function setMode(selectedMode) {
+            stop();
+            mode = selectedMode;
+            
+            // Atualizar UI das abas
+            document.getElementById('tab-stopwatch').className = mode === 'stopwatch' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('tab-timer').className = mode === 'timer' ? 'tab-btn active' : 'tab-btn';
+
+            reset();
+        }
+
+        // Lógica do Timer
+        function start() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            interval = setInterval(() => {
+                if (mode === 'stopwatch') {
+                    seconds++;
+                } else {
+                    if (seconds > 0) {
+                        seconds--;
+                    } else {
+                        // Tempo acabou
+                        stop();
+                        showModal();
+                        return;
+                    }
+                }
+                updateDisplay();
+            }, 1000);
+        }
+
+        function stop() {
+            isRunning = false;
+            clearInterval(interval);
+        }
+
+        function reset() {
+            stop();
+            if (mode === 'stopwatch') {
+                seconds = 0;
+            } else {
+                seconds = timerDuration;
+            }
+            updateDisplay();
+        }
+
+        // Modal de Mensagem
+        function showModal() {
+            document.getElementById('modal-text').innerText = customMessage;
+            document.getElementById('message-modal').style.display = 'flex';
+            // Tocar um som simples (opcional)
+            // const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+            // audio.play();
+        }
+
+        function closeModal() {
+            document.getElementById('message-modal').style.display = 'none';
+            if(mode === 'timer') reset();
+        }
+
+        // Correr inicialização
+        init();
+    </script>
+</body>
+</html>
