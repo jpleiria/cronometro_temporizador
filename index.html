@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cronómetro_Temporizador</title>
+    <title>Cronómetro Master v8 (Upload de Logo)</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@600&family=Orbitron:wght@500&family=Press+Start+2P&family=Roboto+Mono:wght@500&family=Share+Tech+Mono&family=Inter:wght@600&display=swap" rel="stylesheet">
     
@@ -18,7 +18,6 @@
             --text-sub: #7f8c8d;
             --input-bg: #fff;
             --input-border: #ddd;
-            
             --timer-size: 6rem; 
         }
 
@@ -107,7 +106,6 @@
             position: relative;
         }
 
-        /* Remove margens se estiver escondido */
         h1.dynamic-title { margin-top: 0; font-size: 2rem; color: var(--primary); min-height: 0; }
         h1.dynamic-title[style*="display: none"] { margin: 0; }
         
@@ -181,6 +179,11 @@
             width: 100%; padding: 10px; border: 1px solid var(--input-border);
             background: var(--input-bg); color: var(--text-main); border-radius: 6px; box-sizing: border-box;
         }
+        
+        /* Botões Especiais (Upload) */
+        .btn-upload { background: var(--secondary); color: white; margin-top: 5px; cursor: pointer; }
+        .btn-remove { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-top: 5px; }
+        
         .btn-save { width: 100%; padding: 12px; background-color: #27ae60; color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; margin-top: 10px; }
 
         /* --- Modal --- */
@@ -205,7 +208,7 @@
     <div id="zone-bottom-right" class="ui-zone zone-bottom-right"></div>
 
     <div id="real-time-clock" class="rt-small">00:00:00</div>
-    <img id="app-logo" src="logo.png" alt="Logo" class="logo-medium">
+    <img id="app-logo" src="" alt="Logo" class="logo-medium">
 
     <div class="top-bar">
         <button class="icon-btn" onclick="toggleTheme()" title="Modo Escuro/Claro">🌓</button>
@@ -266,7 +269,12 @@
                 </div>
 
                 <div class="settings-section">
-                    <div class="settings-title">Logotipo</div>
+                    <div class="settings-title">Logotipo Personalizado</div>
+                    <div class="form-group">
+                        <label>Carregar Imagem:</label>
+                        <input type="file" id="input-logo-file" accept="image/*" onchange="handleLogoUpload(this)">
+                        <button class="btn-remove" onclick="resetLogo()">Remover / Resetar Logo</button>
+                    </div>
                     <div class="form-row">
                         <div class="form-group" style="flex:1">
                             <label>Mostrar:</label>
@@ -360,6 +368,10 @@
         let timerDurationCS = 30000;
         let customMessage = "O tempo acabou!";
         let sizeNormal = 6; let sizeFull = 15;
+        
+        // Estado da Imagem
+        const defaultLogo = "logo.png"; // Fallback se não houver custom
+        let currentLogoData = defaultLogo;
 
         // --- DOM ---
         const els = {
@@ -392,10 +404,50 @@
         function init() {
             els.inputs.title.value = els.title.innerText;
             els.inputs.footer.value = els.footer.innerText;
+            
+            // Carregar Logotipo da Memória (LocalStorage)
+            const savedLogo = localStorage.getItem('customLogo');
+            if (savedLogo) {
+                currentLogoData = savedLogo;
+            }
+            els.logo.src = currentLogoData;
+
             setInterval(updateRealClock, 1000);
             updateRealClock();
             document.documentElement.style.setProperty('--timer-size', sizeNormal + 'rem');
+            
             saveSettings(); 
+        }
+
+        // --- LOGICA DE UPLOAD DE IMAGEM ---
+        function handleLogoUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const base64Image = e.target.result;
+                    currentLogoData = base64Image;
+                    
+                    // Atualizar a imagem imediatamente
+                    els.logo.src = currentLogoData;
+                    
+                    // Guardar na memória do navegador (Persistência)
+                    try {
+                        localStorage.setItem('customLogo', currentLogoData);
+                    } catch (error) {
+                        alert("A imagem é demasiado grande para guardar na memória. Tente uma menor.");
+                    }
+                }
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function resetLogo() {
+            currentLogoData = defaultLogo;
+            els.logo.src = currentLogoData;
+            localStorage.removeItem('customLogo');
+            document.getElementById('input-logo-file').value = ""; // Limpar input
         }
 
         // --- ZOOM & UI ---
@@ -433,7 +485,7 @@
         }
 
         function saveSettings() {
-            // Textos (LOGICA CORRIGIDA PARA ESCONDER VAZIOS)
+            // Textos
             const tVal = els.inputs.title.value.trim();
             els.title.innerText = tVal;
             els.title.style.display = tVal === "" ? "none" : "block";
