@@ -74,7 +74,17 @@
             display: flex; gap: 10px; z-index: 100;
             background: rgba(0,0,0,0.05); padding: 8px 15px; border-radius: 50px;
             backdrop-filter: blur(5px);
+            transition: opacity 0.4s ease, visibility 0.4s ease;
         }
+        /* Em fullscreen, a toolbar esconde-se automaticamente */
+        .top-bar.fs-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        /* Em fullscreen, o cursor também desaparece */
+        body.fs-cursor-hidden,
+        body.fs-cursor-hidden * { cursor: none !important; }
         .icon-btn {
             background: none; border: none; cursor: pointer;
             font-size: 1.2rem; color: var(--text-sub);
@@ -766,10 +776,42 @@
             }
         }
 
+        // --- Auto-hide toolbar em fullscreen ---
+        let _fsHideTimer = null;
+        const topBar = document.querySelector('.top-bar');
+
+        function showToolbar() {
+            topBar.classList.remove('fs-hidden');
+            document.body.classList.remove('fs-cursor-hidden');
+            clearTimeout(_fsHideTimer);
+            if (els.container.classList.contains('fullscreen-mode')) {
+                _fsHideTimer = setTimeout(hideToolbar, 3000);
+            }
+        }
+        function hideToolbar() {
+            topBar.classList.add('fs-hidden');
+            document.body.classList.add('fs-cursor-hidden');
+        }
+
+        document.addEventListener('mousemove', showToolbar);
+        document.addEventListener('keydown', (e) => {
+            // handleKeydown já trata as teclas; aqui só mostra a toolbar
+            if (els.container.classList.contains('fullscreen-mode')) showToolbar();
+        });
+
         function toggleFullscreen() {
             els.container.classList.toggle('fullscreen-mode');
             const isNowFull = els.container.classList.contains('fullscreen-mode');
             document.documentElement.style.setProperty('--timer-size', (isNowFull ? sizeFull : sizeNormal) + 'rem');
+            if (isNowFull) {
+                // Entra em fullscreen: mostra brevemente e depois esconde
+                showToolbar();
+            } else {
+                // Sai de fullscreen: garante toolbar visível e cancela timer
+                clearTimeout(_fsHideTimer);
+                topBar.classList.remove('fs-hidden');
+                document.body.classList.remove('fs-cursor-hidden');
+            }
         }
 
         function toggleView() {
