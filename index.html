@@ -43,7 +43,7 @@
             min-height: 100vh;
             color: var(--text-main);
             transition: background 0.3s, color 0.3s;
-            overflow: hidden; 
+            overflow-x: hidden; /* evita scroll horizontal, mas permite vertical em ecrãs pequenos */
         }
 
         /* --- ZONAS DE UI --- */
@@ -134,11 +134,28 @@
             display: flex; justify-content: center; align-items: baseline;
             font-size: var(--timer-size); font-weight: bold; color: var(--text-main);
             margin: 20px 0; line-height: 1; user-select: none; width: 100%;
-            font-variant-numeric: tabular-nums lining-nums;
-            font-feature-settings: "tnum", "lnum";
         }
-        .time-part-main { text-align: center; white-space: nowrap; }
-        .time-part-millis { font-size: 0.5em; opacity: 0.7; margin-left: 0.1em; white-space: nowrap; }
+        /* Cada dígito ocupa sempre a mesma largura, independente da fonte */
+        .clock-digits {
+            display: inline-flex;
+            align-items: baseline;
+        }
+        .clock-digit {
+            display: inline-block;
+            width: 0.62em;   /* largura fixa para qualquer dígito 0-9 */
+            text-align: center;
+        }
+        .clock-sep {
+            display: inline-block;
+            width: 0.32em;   /* largura fixa para o separador ":" */
+            text-align: center;
+        }
+        .time-part-millis {
+            font-size: 0.5em; opacity: 0.7; margin-left: 0.1em;
+            white-space: nowrap; display: inline-flex; align-items: baseline;
+        }
+        .time-part-millis .clock-sep { width: 0.32em; }
+        .time-part-millis .clock-digit { width: 0.62em; }
         .clock-wrapper.urgent { color: var(--accent); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
 
@@ -299,7 +316,9 @@
                 </div>
 
                 <div class="clock-wrapper font-modern" id="clock-wrapper">
-                    <span class="time-part-main" id="display-main">00:00</span>
+                    <span class="clock-digits" id="display-main">
+                        <!-- dígitos gerados dinamicamente por updateDisplay() -->
+                    </span>
                     <span class="time-part-millis" id="display-millis">.00</span>
                 </div>
 
@@ -476,7 +495,6 @@
     </div>
 
     <script>
-        // --- ESTADO ---
         let interval = null;
         let timeInCentiseconds = 0;
         let isRunning = false;
@@ -484,6 +502,8 @@
         let timerDurationCS = 30000;
         let initialTimerCS = 30000;
         let customMessage = "O tempo acabou!";
+        let _startTime = 0;       // timestamp de referência (Date.now)
+        let _startCS = 0;         // valor de timeInCentiseconds no momento do start
         let sizeNormal = 6; let sizeFull = 15;
         let wakeLock = null;
         let lapCount = 0;
@@ -525,6 +545,10 @@
         };
 
         function init() {
+            // Restaurar tema guardado
+            const savedTheme = localStorage.getItem('appTheme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+
             loadConfig();
             setInterval(updateRealClock, 1000);
             updateRealClock();
@@ -644,9 +668,16 @@
         }
         function toggleTheme() {
             const body = document.body;
-            body.setAttribute('data-theme', body.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+            const newTheme = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('appTheme', newTheme);
         }
-        function previewFont(v) { els.clockWrapper.className = `clock-wrapper ${v}`; }
+        function previewFont(v) {
+            // Preserva classes funcionais como 'urgent' ao trocar a fonte
+            const wrapper = els.clockWrapper;
+            const isUrgent = wrapper.classList.contains('urgent');
+            wrapper.className = `clock-wrapper ${v}${isUrgent ? ' urgent' : ''}`;
+        }
 
         function saveSettings(isInit = false) {
             const tVal = els.inputs.title.value.trim();
@@ -661,7 +692,9 @@
             timerDurationCS = ((h * 3600) + (m * 60) + s) * 100;
             initialTimerCS = timerDurationCS;
 
-            els.clockWrapper.className = `clock-wrapper ${els.inputs.font.value}`;
+            const fontVal = els.inputs.font.value;
+            const isUrgent = els.clockWrapper.classList.contains('urgent');
+            els.clockWrapper.className = `clock-wrapper ${fontVal}${isUrgent ? ' urgent' : ''}`;
 
             // Real Time Clock
             els.rtClock.style.display = els.inputs.rtShow.value;
@@ -708,13 +741,22 @@
             const sStr = seconds.toString().padStart(2, '0');
             const csStr = centis.toString().padStart(2, '0');
             let mainPart = (hours > 0) ? `${hours.toString().padStart(2, '0')}:${mStr}:${sStr}` : `${mStr}:${sStr}`;
-            return { main: mainPart, millis: `.${csStr}` };
+            return { main: mainPart, millis: `.${csStr}`, csStr };
+        }
+
+        function renderDigits(str) {
+            // Converte "09:45" → array de spans com classe digit ou sep
+            return str.split('').map(ch => {
+                if (ch === ':') return `<span class="clock-sep">:</span>`;
+                return `<span class="clock-digit">${ch}</span>`;
+            }).join('');
         }
 
         function updateDisplay() {
             const parts = formatTimeParts(timeInCentiseconds);
-            els.displayMain.innerText = parts.main;
-            els.displayMillis.innerText = parts.millis;
+            els.displayMain.innerHTML = renderDigits(parts.main);
+            // millis: ".00" → sep + d + d
+            els.displayMillis.innerHTML = `<span class="clock-sep">.</span><span class="clock-digit">${parts.csStr[0]}</span><span class="clock-digit">${parts.csStr[1]}</span>`;
             document.title = isRunning ? `${parts.main} - Timer` : "Cronómetro Master";
 
             if (mode === 'timer' && initialTimerCS > 0) {
@@ -723,13 +765,13 @@
                 
                 // --- Lógica de Cores da Barra (Semáforo) ---
                 if (pct > 60) { 
-                    els.progressFill.style.background = 'var(--success)'; // Verde
+                    els.progressFill.style.background = 'var(--success)';
                 } 
                 else if (pct > 25) { 
-                    els.progressFill.style.background = 'var(--warning)'; // Laranja
+                    els.progressFill.style.background = 'var(--warning)';
                 } 
                 else { 
-                    els.progressFill.style.background = 'var(--accent)'; // Vermelho
+                    els.progressFill.style.background = 'var(--accent)';
                 }
 
                 if (timeInCentiseconds <= 1000 && timeInCentiseconds > 0) { els.clockWrapper.classList.add('urgent'); } 
@@ -754,12 +796,23 @@
         function start() {
             if (isRunning) return;
             isRunning = true;
+            _startTime = Date.now();
+            _startCS = timeInCentiseconds;
             requestWakeLock();
             interval = setInterval(() => {
-                if (mode === 'stopwatch') { timeInCentiseconds++; } 
-                else {
-                    if (timeInCentiseconds > 0) { timeInCentiseconds--; } 
-                    else { stop(); playSound(); showModal(); return; }
+                const elapsed = Math.round((Date.now() - _startTime) / 10); // centissegundos reais
+                if (mode === 'stopwatch') {
+                    timeInCentiseconds = _startCS + elapsed;
+                } else {
+                    timeInCentiseconds = _startCS - elapsed;
+                    if (timeInCentiseconds <= 0) {
+                        timeInCentiseconds = 0;
+                        updateDisplay();
+                        stop();
+                        playSound();
+                        showModal();
+                        return;
+                    }
                 }
                 updateDisplay();
             }, 10);
@@ -791,8 +844,6 @@
             div.className = 'lap-item';
             div.innerHTML = `<span>Volta ${lapCount}</span><span>${parts.main}${parts.millis}</span>`;
             els.laps.prepend(div);
-            
-            // Garante que a lista está visível
             els.laps.style.display = 'block';
         }
 
