@@ -670,7 +670,7 @@
                 els.inputs.color.value = config.color || "#3498db";
                 els.inputs.font.value = config.font || "font-modern";
                 
-                els.inputs.logoShow.value = config.logoShow || "none";
+                els.inputs.logoShow.value = config.logoShow || "block";
                 els.inputs.logoSize.value = config.logoSize || "logo-medium";
                 els.inputs.logoPos.value = config.logoPos || "zone-top-left";
                 
@@ -683,6 +683,10 @@
                 updatePrimaryColor(config.color || "#3498db");
             } else {
                 els.inputs.title.value = "Cronómetro";
+                // Sem config guardada — aplicar defaults do logo
+                els.inputs.logoShow.value = "block";
+                els.inputs.logoSize.value = "logo-medium";
+                els.inputs.logoPos.value = "zone-top-left";
             }
         }
 
@@ -698,10 +702,19 @@
             }
         }
         function resetLogo() {
-            currentLogoData = defaultLogo; 
+            currentLogoData = defaultLogo;
             els.logo.src = currentLogoData;
             localStorage.removeItem('customLogo');
             document.getElementById('input-logo-file').value = "";
+            // Repor valores por defeito nos selects
+            els.inputs.logoShow.value = "block";
+            els.inputs.logoSize.value = "logo-medium";
+            els.inputs.logoPos.value = "zone-top-left";
+            // Aplicar imediatamente sem precisar de guardar
+            els.logo.style.display = "block";
+            els.logo.className = "logo-medium";
+            const logoZone = document.getElementById("zone-top-left");
+            if (logoZone) logoZone.appendChild(els.logo);
         }
 
         function playTone(type) {
