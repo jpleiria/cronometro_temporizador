@@ -183,13 +183,25 @@
             display: none; /* Controlado via JS */
         }
         .lap-item {
-            display: flex; justify-content: space-between;
+            display: flex; justify-content: space-between; align-items: center;
             padding: 8px 15px; 
             border-bottom: 1px solid rgba(0,0,0,0.05);
             font-family: 'Roboto Mono', monospace; font-size: 0.95rem;
             color: var(--text-main);
         }
-        .lap-item span:first-child { font-weight: bold; color: var(--text-sub); }
+        .lap-item span:first-child { font-weight: bold; color: var(--text-sub); min-width: 4em; }
+        .lap-split { font-weight: bold; color: var(--text-main); text-align: center; flex: 1; }
+        .lap-total { color: var(--text-sub); font-size: 0.85rem; text-align: right; min-width: 6em; }
+        .lap-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 15px;
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.06em; color: var(--text-sub);
+            border-bottom: 2px solid var(--input-border);
+        }
+        .lap-header span:first-child { min-width: 4em; }
+        .lap-header span:nth-child(2) { flex: 1; text-align: center; }
+        .lap-header span:last-child { min-width: 6em; text-align: right; }
         .lap-item:nth-child(even) { background: rgba(0,0,0,0.03); }
         .lap-item:last-child { border-bottom: none; }
 
@@ -430,7 +442,13 @@
                     <button class="btn-reset" onclick="reset()" title="Esc">Reset</button>
                 </div>
                 
-                <div id="laps-container"></div>
+                <div id="laps-container">
+                    <div class="lap-header">
+                        <span></span>
+                        <span>Parcial</span>
+                        <span>Total</span>
+                    </div>
+                </div>
 
                 <footer id="display-footer" class="dynamic-footer"></footer>
             </div>
@@ -616,6 +634,7 @@
         let sizeNormal = 6; let sizeFull = 15;
         let wakeLock = null;
         let lapCount = 0;
+        let lastLapCS = 0; // tempo acumulado no momento da última volta
         const defaultLogo = "logo.png"; 
         let currentLogoData = defaultLogo;
 
@@ -984,8 +1003,10 @@
             document.title = "Cronómetro Master";
             
             // Reset de Voltas
-            lapCount = 0; 
-            els.laps.innerHTML = "";
+            lapCount = 0;
+            lastLapCS = 0;
+            // Remove apenas os lap-item, preservando o cabeçalho
+            els.laps.querySelectorAll('.lap-item').forEach(el => el.remove());
             // Mantém visível apenas se em modo cronómetro
             if (mode === 'stopwatch') els.laps.style.display = 'block';
         }
@@ -993,10 +1014,13 @@
         function recordLap() {
             if(mode !== 'stopwatch') return;
             lapCount++;
-            const parts = formatTimeParts(timeInCentiseconds);
+            const lapCS = timeInCentiseconds - lastLapCS; // tempo parcial desta volta
+            const splitParts = formatTimeParts(lapCS);
+            const totalParts = formatTimeParts(timeInCentiseconds);
+            lastLapCS = timeInCentiseconds;
             const div = document.createElement('div');
             div.className = 'lap-item';
-            div.innerHTML = `<span>Volta ${lapCount}</span><span>${parts.main}${parts.millis}</span>`;
+            div.innerHTML = `<span>Volta ${lapCount}</span><span class="lap-split">${splitParts.main}${splitParts.millis}</span><span class="lap-total">${totalParts.main}${totalParts.millis}</span>`;
             els.laps.prepend(div);
             els.laps.style.display = 'block';
         }
